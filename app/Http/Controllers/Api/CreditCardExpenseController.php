@@ -22,12 +22,33 @@ class CreditCardExpenseController extends Controller
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'value' => ['required', 'numeric', 'min:0.01'],
+            'total_value' => ['nullable', 'numeric', 'min:0.01'],
+            'installments' => ['nullable', 'integer', 'min:1'],
+            'current_installment' => ['nullable', 'integer', 'min:1'],
             'date' => ['required', 'date'],
         ]);
 
+        // If it's an installment purchase
+        if (isset($validated['installments']) && $validated['installments'] > 1) {
+            $validated['current_installment'] = $validated['current_installment'] ?? 1;
+
+            // If total_value is provided, use it to calculate monthly value
+            if (isset($validated['total_value']) && $validated['total_value'] > 0) {
+                $validated['value'] = $validated['total_value'] / $validated['installments'];
+            } else {
+                // If only monthly value is provided, calculate total
+                $validated['total_value'] = $validated['value'] * $validated['installments'];
+            }
+        } else {
+            // Single payment - value is the total
+            $validated['total_value'] = $validated['value'];
+            $validated['installments'] = 1;
+            $validated['current_installment'] = 1;
+        }
+
         $expense = $creditCard->expenses()->create($validated);
 
-        // Update credit card balance
+        // Update credit card balance - subtract only the monthly value
         $creditCard->current_balance += $expense->value;
         $creditCard->save();
 

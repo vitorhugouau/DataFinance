@@ -41,9 +41,9 @@
 
 <div class="card">
     <div class="card-body">
-        <div class="table-responsive">
+    <div class="table-responsive">
             <table class="table">
-                <thead>
+            <thead>
                     <tr>
                         <th>Data</th>
                         <th>Conta</th>
@@ -53,11 +53,11 @@
                         <th class="text-end">Valor</th>
                         <th class="text-center">Ações</th>
                     </tr>
-                </thead>
+            </thead>
                 <tbody id="listTransactions">
                     <tr><td colspan="7" class="text-center">Carregando...</td></tr>
                 </tbody>
-            </table>
+        </table>
         </div>
     </div>
 </div>
@@ -72,43 +72,43 @@
             <div class="modal-body">
                 <div class="row g-3">
                     <div class="col-md-6">
-                        <label class="form-label">Tipo</label>
+                    <label class="form-label">Tipo</label>
                         <select name="type" id="txType" class="form-select" required>
-                            <option value="expense">Despesa</option>
-                            <option value="income">Receita</option>
-                            <option value="transfer">Transferência</option>
-                        </select>
-                    </div>
+                        <option value="expense">Despesa</option>
+                        <option value="income">Receita</option>
+                        <option value="transfer">Transferência</option>
+                    </select>
+                </div>
 
                     <div class="col-md-6">
-                        <label class="form-label">Conta</label>
+                    <label class="form-label">Conta</label>
                         <select name="account_id" id="txAccount" class="form-select" required></select>
-                    </div>
+                </div>
 
                     <div class="col-md-6 d-none" id="relatedAccountWrap">
                         <label class="form-label">Conta Destino</label>
-                        <select name="related_account_id" id="txRelated" class="form-select"></select>
-                    </div>
+                    <select name="related_account_id" id="txRelated" class="form-select"></select>
+                </div>
 
                     <div class="col-md-6" id="catWrap">
-                        <label class="form-label">Categoria</label>
+                    <label class="form-label">Categoria</label>
                         <select name="category_id" id="txCategory" class="form-select">
                             <option value="">Sem categoria</option>
                         </select>
-                    </div>
+                </div>
 
                     <div class="col-md-6">
-                        <label class="form-label">Valor</label>
+                    <label class="form-label">Valor</label>
                         <input name="value" class="form-control" type="number" step="0.01" min="0.01" required>
-                    </div>
+                </div>
 
                     <div class="col-md-6">
-                        <label class="form-label">Data</label>
-                        <input name="date" class="form-control" type="date" value="{{ date('Y-m-d') }}" required>
-                    </div>
+                    <label class="form-label">Data</label>
+                    <input name="date" class="form-control" type="date" value="{{ date('Y-m-d') }}" required>
+                </div>
 
                     <div class="col-12">
-                        <label class="form-label">Descrição</label>
+                    <label class="form-label">Descrição</label>
                         <input name="description" class="form-control" placeholder="Descrição da transação">
                     </div>
                 </div>
@@ -289,7 +289,7 @@ function applyFilters() {
     if (dateFilter) {
         const [year, month] = dateFilter.split('-');
         filtered = filtered.filter(t => t.date.startsWith(`${year}-${month}`));
-    }
+        }
     
     // Sort by date descending
     filtered.sort((a, b) => new Date(b.date) - new Date(a.date));

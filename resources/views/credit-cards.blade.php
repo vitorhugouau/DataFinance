@@ -87,12 +87,29 @@
                                 <input name="name" id="expenseName" class="form-control" placeholder="Ex: Supermercado, Restaurante..." required>
                             </div>
                             <div class="col-md-3">
-                                <label class="form-label">Valor</label>
+                                <label class="form-label" id="expenseValueLabel">Valor</label>
                                 <input name="value" id="expenseValue" class="form-control" type="number" step="0.01" min="0.01" required>
+                                <small class="text-muted" id="expenseValueHelp">Valor total ou mensal</small>
                             </div>
                             <div class="col-md-3">
                                 <label class="form-label">Data</label>
                                 <input name="date" id="expenseDate" class="form-control" type="date" value="{{ date('Y-m-d') }}" required>
+                            </div>
+                            <div class="col-12">
+                                <div class="form-check form-switch mb-3">
+                                    <input class="form-check-input" type="checkbox" id="expenseInstallment" onchange="toggleInstallmentFields()">
+                                    <label class="form-check-label" for="expenseInstallment">
+                                        <i class="bi bi-calendar-month"></i> Parcelado
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="col-md-6" id="installmentFields" style="display: none;">
+                                <label class="form-label">Número de Parcelas</label>
+                                <input name="installments" id="expenseInstallments" class="form-control" type="number" min="2" step="1" placeholder="Ex: 3, 6, 12...">
+                            </div>
+                            <div class="col-md-6" id="totalValueField" style="display: none;">
+                                <label class="form-label">Valor Total</label>
+                                <input name="total_value" id="expenseTotalValue" class="form-control" type="number" step="0.01" min="0.01" placeholder="Valor total da compra">
                             </div>
                             <div class="col-12">
                                 <button type="submit" class="btn btn-primary">
@@ -112,7 +129,7 @@
                                     <tr>
                                         <th>Data</th>
                                         <th>Nome</th>
-                                        <th class="text-end">Valor</th>
+                                        <th class="text-end">Valor Mensal</th>
                                         <th class="text-center">Ações</th>
                                     </tr>
                                 </thead>
@@ -316,12 +333,70 @@ function editCreditCard(id) {
         });
 }
 
+function toggleInstallmentFields() {
+    const isInstallment = document.getElementById('expenseInstallment').checked;
+    const installmentFields = document.getElementById('installmentFields');
+    const totalValueField = document.getElementById('totalValueField');
+    const valueLabel = document.getElementById('expenseValueLabel');
+    const valueHelp = document.getElementById('expenseValueHelp');
+    const valueInput = document.getElementById('expenseValue');
+    const installmentsInput = document.getElementById('expenseInstallments');
+    const totalValueInput = document.getElementById('expenseTotalValue');
+
+    if (isInstallment) {
+        installmentFields.style.display = 'block';
+        totalValueField.style.display = 'block';
+        valueLabel.textContent = 'Valor Mensal';
+        valueHelp.textContent = 'Será calculado automaticamente se informar valor total e parcelas';
+        valueInput.required = false;
+        installmentsInput.required = true;
+        totalValueInput.required = true;
+    } else {
+        installmentFields.style.display = 'none';
+        totalValueField.style.display = 'none';
+        valueLabel.textContent = 'Valor';
+        valueHelp.textContent = 'Valor total ou mensal';
+        valueInput.required = true;
+        installmentsInput.required = false;
+        totalValueInput.required = false;
+        installmentsInput.value = '';
+        totalValueInput.value = '';
+    }
+}
+
+// Calculate monthly value when total value and installments are provided
+document.addEventListener('DOMContentLoaded', function() {
+    const totalValueInput = document.getElementById('expenseTotalValue');
+    const installmentsInput = document.getElementById('expenseInstallments');
+    const valueInput = document.getElementById('expenseValue');
+
+    if (totalValueInput && installmentsInput && valueInput) {
+        function calculateMonthlyValue() {
+            const isInstallment = document.getElementById('expenseInstallment').checked;
+            if (isInstallment) {
+                const total = parseFloat(totalValueInput.value) || 0;
+                const installments = parseInt(installmentsInput.value) || 1;
+                if (total > 0 && installments > 1) {
+                    valueInput.value = (total / installments).toFixed(2);
+                }
+            }
+        }
+
+        totalValueInput.addEventListener('input', calculateMonthlyValue);
+        installmentsInput.addEventListener('input', calculateMonthlyValue);
+    }
+});
+
 function showExpenses(id) {
     document.getElementById('currentCardId').value = id;
     loadExpenses(id);
 
     const modal = new bootstrap.Modal(document.getElementById('expensesModal'), { backdrop: false });
     modal.show();
+    
+    // Reset installment fields
+    document.getElementById('expenseInstallment').checked = false;
+    toggleInstallmentFields();
 }
 
 function loadExpenses(cardId) {
@@ -345,11 +420,22 @@ function renderExpenses(expenses) {
     }
 
     tbody.innerHTML = expenses.map(exp => {
+        const isInstallment = exp.installments && exp.installments > 1;
+        const installmentInfo = isInstallment 
+            ? `<br><small class="text-muted">${exp.current_installment}/${exp.installments} parcelas - Total: ${formatCurrency(parseFloat(exp.total_value || exp.value * exp.installments))}</small>`
+            : '';
+        
         return `
             <tr>
                 <td>${formatDate(exp.date)}</td>
-                <td><strong>${exp.name}</strong></td>
-                <td class="text-end text-danger"><strong>${formatCurrency(parseFloat(exp.value))}</strong></td>
+                <td>
+                    <strong>${exp.name}</strong>
+                    ${installmentInfo}
+                </td>
+                <td class="text-end text-danger">
+                    <strong>${formatCurrency(parseFloat(exp.value))}</strong>
+                    ${isInstallment ? '<br><small class="text-muted">mensal</small>' : ''}
+                </td>
                 <td class="text-center">
                     <button class="btn btn-sm btn-outline-danger" onclick="deleteExpense(${exp.id})">
                         <i class="bi bi-trash"></i>
@@ -387,6 +473,8 @@ document.getElementById('formExpense').onsubmit = function(e) {
             loadCreditCards(); // Reload cards to update balance
             e.target.reset();
             document.getElementById('expenseDate').value = new Date().toISOString().split('T')[0];
+            document.getElementById('expenseInstallment').checked = false;
+            toggleInstallmentFields();
         })
         .catch(err => {
             console.error('Error adding expense:', err);

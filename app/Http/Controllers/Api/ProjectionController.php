@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Account;
 use App\Models\Category;
 use App\Models\CreditCard;
+use App\Models\FixedExpense;
 use App\Models\Investment;
 use App\Models\Transaction;
 use Illuminate\Http\JsonResponse;
@@ -54,11 +55,27 @@ class ProjectionController extends Controller
         // Get credit cards balance
         $creditCardsBalance = CreditCard::where('active', true)->sum('current_balance');
 
-        // Get investments total (always calculate, even if not subtracting)
+        // Get investments total and individual investments (always calculate for custom operations)
         $investments = Investment::all();
         $investmentsTotal = $investments->sum(function ($investment) {
             return $investment->total_invested;
         });
+
+        // Add individual investments to metrics
+        $investmentsMetrics = [];
+        foreach ($investments as $investment) {
+            $investmentsMetrics['investment_'.$investment->id] = (float) $investment->total_invested;
+        }
+
+        // Get fixed expenses total and individual expenses (always calculate for custom operations)
+        $fixedExpensesList = FixedExpense::where('active', true)->get();
+        $fixedExpensesTotal = $fixedExpensesList->sum('amount');
+
+        // Add individual fixed expenses to metrics
+        $fixedExpensesMetrics = [];
+        foreach ($fixedExpensesList as $expense) {
+            $fixedExpensesMetrics['fixed_expense_'.$expense->id] = (float) $expense->amount;
+        }
 
         // Get account balance (if specific account selected)
         $accountBalance = 0;
@@ -103,14 +120,15 @@ class ProjectionController extends Controller
             $projectedBalance -= $finalInvestmentsTotal;
         }
 
-        $baseMetrics = [
+        $baseMetrics = array_merge([
             'current_balance' => (float) $totalAvailable,
             'expected_income' => (float) $expectedIncome,
             'total_expenses' => (float) $totalExpenses,
             'credit_cards_balance' => (float) $creditCardsBalance,
             'investments_total' => (float) $finalInvestmentsTotal,
+            'fixed_expenses_total' => (float) $fixedExpensesTotal,
             'projected_balance' => (float) $projectedBalance,
-        ];
+        ], $fixedExpensesMetrics, $investmentsMetrics);
         $customMetricValues = $baseMetrics;
         $customResults = [];
 
@@ -155,18 +173,31 @@ class ProjectionController extends Controller
             ];
         }
 
-        return response()->json([
+        $response = [
             'current_balance' => (float) $totalAvailable,
             'expected_income' => (float) $expectedIncome,
             'total_expenses' => (float) $totalExpenses,
             'credit_cards_balance' => (float) $creditCardsBalance,
             'investments_total' => (float) $finalInvestmentsTotal,
+            'fixed_expenses_total' => (float) $fixedExpensesTotal,
             'projected_balance' => (float) $projectedBalance,
             'expenses_details' => $expensesDetails,
             'month' => $month,
             'options' => $options,
             'custom_results' => $customResults,
-        ]);
+        ];
+
+        // Include individual fixed expenses in response for custom operations
+        foreach ($fixedExpensesMetrics as $key => $value) {
+            $response[$key] = $value;
+        }
+
+        // Include individual investments in response for custom operations
+        foreach ($investmentsMetrics as $key => $value) {
+            $response[$key] = $value;
+        }
+
+        return response()->json($response);
     }
 
     public function categories(): JsonResponse
@@ -187,5 +218,25 @@ class ProjectionController extends Controller
         });
 
         return response()->json($accounts);
+    }
+
+    public function fixedExpenses(): JsonResponse
+    {
+        $fixedExpenses = FixedExpense::where('active', true)
+            ->with(['category', 'account'])
+            ->get()
+            ->map(function ($expense) {
+                return [
+                    'id' => $expense->id,
+                    'name' => $expense->name,
+                    'amount' => (float) $expense->amount,
+                    'category_id' => $expense->category_id,
+                    'category_name' => $expense->category ? $expense->category->name : null,
+                    'description' => $expense->description,
+                    'due_date' => $expense->due_date?->format('Y-m-d'),
+                ];
+            });
+
+        return response()->json($fixedExpenses);
     }
 }

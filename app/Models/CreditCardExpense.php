@@ -11,11 +11,17 @@ class CreditCardExpense extends Model
         'credit_card_id',
         'name',
         'value',
+        'total_value',
+        'installments',
+        'current_installment',
         'date',
     ];
 
     protected $casts = [
         'value' => 'decimal:2',
+        'total_value' => 'decimal:2',
+        'installments' => 'integer',
+        'current_installment' => 'integer',
         'date' => 'date',
     ];
 

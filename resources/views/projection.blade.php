@@ -117,6 +117,21 @@
     </div>
 </div>
 
+<div class="card mb-4">
+    <div class="card-body">
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-3">
+            <div>
+                <h5 class="mb-1"><i class="bi bi-calculator"></i> Cálculos Adicionais</h5>
+                <small class="text-muted">Use os resultados das combinações personalizadas ou valores específicos para criar novos cálculos.</small>
+            </div>
+            <button class="btn btn-outline-primary" type="button" onclick="addAdditionalCalculation()">
+                <i class="bi bi-plus-circle"></i> Adicionar cálculo
+            </button>
+        </div>
+        <div id="additionalCalculationsContainer" class="additional-calculations"></div>
+    </div>
+</div>
+
 <div class="row g-4">
     <div class="col-md-6">
         <div class="card">
@@ -206,6 +221,17 @@
 
     .custom-operation-row label {
         font-size: 0.85rem;
+    }
+    
+    .additional-calculation-row {
+        background: var(--bg-secondary);
+        border: 1px solid var(--border-color);
+        transition: all 0.2s ease;
+    }
+    
+    .additional-calculation-row:hover {
+        border-color: var(--accent-primary);
+        box-shadow: 0 2px 8px rgba(0, 212, 255, 0.1);
     }
 
     @media (max-width: 768px) {
@@ -412,7 +438,9 @@
     let selectedExpenses = [];
     let categories = [];
     let accounts = [];
-    const metricOptions = [{
+    let fixedExpenses = [];
+    let investments = [];
+    let metricOptions = [{
             value: 'current_balance',
             label: 'Saldo Atual (Contas)'
         },
@@ -433,19 +461,77 @@
             label: 'Investimentos'
         },
         {
+            value: 'fixed_expenses_total',
+            label: 'Gastos Fixos (Total)'
+        },
+        {
             value: 'projected_balance',
             label: 'Saldo Projetado'
         },
     ];
-    const metricLabels = metricOptions.reduce((acc, option) => {
+    let metricLabels = metricOptions.reduce((acc, option) => {
         acc[option.value] = option.label;
         return acc;
     }, {});
-    let customOperations = [{
-        apply_to: 'investments_total',
-        operation: 'subtract',
-        values: ['credit_cards_balance'],
-    }, ];
+    
+    // Load custom operations from localStorage
+    function loadCustomOperationsFromStorage() {
+        try {
+            const saved = localStorage.getItem('projection_custom_operations');
+            if (saved) {
+                const parsed = JSON.parse(saved);
+                if (Array.isArray(parsed)) {
+                    return parsed;
+                }
+            }
+        } catch (e) {
+            console.error('Error loading custom operations from storage:', e);
+        }
+        // Default if nothing saved
+        return [{
+            apply_to: 'investments_total',
+            operation: 'subtract',
+            values: ['credit_cards_balance'],
+        }];
+    }
+    
+    // Save custom operations to localStorage
+    function saveCustomOperationsToStorage() {
+        try {
+            localStorage.setItem('projection_custom_operations', JSON.stringify(customOperations));
+        } catch (e) {
+            console.error('Error saving custom operations to storage:', e);
+        }
+    }
+    
+    let customOperations = loadCustomOperationsFromStorage();
+    
+    // Additional calculations storage
+    function loadAdditionalCalculationsFromStorage() {
+        try {
+            const saved = localStorage.getItem('projection_additional_calculations');
+            if (saved) {
+                const parsed = JSON.parse(saved);
+                if (Array.isArray(parsed)) {
+                    return parsed;
+                }
+            }
+        } catch (e) {
+            console.error('Error loading additional calculations from storage:', e);
+        }
+        return [];
+    }
+    
+    function saveAdditionalCalculationsToStorage() {
+        try {
+            localStorage.setItem('projection_additional_calculations', JSON.stringify(additionalCalculations));
+        } catch (e) {
+            console.error('Error saving additional calculations to storage:', e);
+        }
+    }
+    
+    let additionalCalculations = loadAdditionalCalculationsFromStorage();
+    let savedCustomResults = {}; // Store results from custom operations
 
     function formatCurrency(value) {
         return new Intl.NumberFormat('pt-BR', {
@@ -455,7 +541,7 @@
     }
 
     function loadCategories() {
-        axios.get('/api/projection/categories')
+        return axios.get('/api/projection/categories')
             .then(r => {
                 categories = r.data || [];
                 const select = document.getElementById('expenseCategory');
@@ -469,12 +555,86 @@
                         });
                     }
                 });
+
+                // Load fixed expenses and add them to the select
+                return loadFixedExpenses();
             })
-            .catch(err => console.error('Error loading categories:', err));
+            .catch(err => {
+                console.error('Error loading categories:', err);
+                // Still try to load fixed expenses
+                return loadFixedExpenses();
+            });
+    }
+
+    function loadFixedExpenses() {
+        return axios.get('/api/projection/fixed-expenses')
+            .then(r => {
+                fixedExpenses = r.data || [];
+                const select = document.getElementById('expenseCategory');
+
+                if (fixedExpenses.length > 0) {
+                    select.innerHTML += '<optgroup label="━━━ Gastos Fixos ━━━">';
+                    fixedExpenses.forEach(expense => {
+                        const displayName = expense.name + (expense.category_name ? ` (${expense.category_name})` : '') + ` - ${formatCurrency(expense.amount)}`;
+                        select.innerHTML += `<option value="fixed_expense_${expense.id}">${displayName}</option>`;
+                    });
+                    select.innerHTML += '</optgroup>';
+                }
+
+                // Add individual fixed expenses to metricOptions for custom combinations
+                fixedExpenses.forEach(expense => {
+                    metricOptions.push({
+                        value: `fixed_expense_${expense.id}`,
+                        label: `${expense.name} - ${formatCurrency(expense.amount)}`
+                    });
+                });
+
+                // Update metricLabels
+                metricOptions.forEach(opt => {
+                    metricLabels[opt.value] = opt.label;
+                });
+
+                // Load investments after fixed expenses
+                return loadInvestments();
+            })
+            .catch(err => {
+                console.error('Error loading fixed expenses:', err);
+                // Still try to load investments
+                return loadInvestments();
+            });
+    }
+
+    function loadInvestments() {
+        return axios.get('/api/investments')
+            .then(r => {
+                investments = r.data || [];
+
+                // Add individual investments to metricOptions for "Aplicar em" select
+                investments.forEach(investment => {
+                    const investmentLabel = `${investment.name} - ${formatCurrency(investment.total_invested || 0)}`;
+                    metricOptions.push({
+                        value: `investment_${investment.id}`,
+                        label: investmentLabel
+                    });
+                });
+
+                // Update metricLabels
+                metricOptions.forEach(opt => {
+                    metricLabels[opt.value] = opt.label;
+                });
+
+                // Re-render custom operations after investments are loaded
+                renderCustomOperations();
+            })
+            .catch(err => {
+                console.error('Error loading investments:', err);
+                // Still render custom operations even if investments fail to load
+                renderCustomOperations();
+            });
     }
 
     function loadAccounts() {
-        axios.get('/api/projection/accounts')
+        return axios.get('/api/projection/accounts')
             .then(r => {
                 accounts = r.data || [];
                 const select = document.getElementById('selectedAccount');
@@ -484,7 +644,9 @@
                     select.innerHTML += `<option value="${account.id}">${account.name} (${formatCurrency(account.current_balance)})</option>`;
                 });
             })
-            .catch(err => console.error('Error loading accounts:', err));
+            .catch(err => {
+                console.error('Error loading accounts:', err);
+            });
     }
 
     function toggleAccountSelect() {
@@ -578,8 +740,18 @@
             operation: 'subtract',
             values: ['credit_cards_balance'],
         });
+        saveCustomOperationsToStorage();
         renderCustomOperations();
         calculateProjection();
+    }
+    
+    function removeCustomOperation(index) {
+        if (confirm('Remover esta combinação personalizada?')) {
+            customOperations.splice(index, 1);
+            saveCustomOperationsToStorage();
+            renderCustomOperations();
+            calculateProjection();
+        }
     }
 
     function updateCustomOperation(index, field, value) {
@@ -587,6 +759,7 @@
             return;
         }
         customOperations[index][field] = value;
+        saveCustomOperationsToStorage();
         renderCustomOperations();
         calculateProjection();
     }
@@ -598,6 +771,7 @@
 
         const selectedValues = Array.from(selectEl.selectedOptions).map(opt => opt.value);
         customOperations[index].values = selectedValues.length ? selectedValues : [];
+        saveCustomOperationsToStorage();
         renderCustomOperations();
         calculateProjection();
     }
@@ -666,6 +840,7 @@
             operation.values.push(value);
         }
 
+        saveCustomOperationsToStorage();
         updateMultiselectDisplay(index);
         calculateProjection();
     }
@@ -683,6 +858,7 @@
         const valueIndex = operation.values.indexOf(value);
         if (valueIndex > -1) {
             operation.values.splice(valueIndex, 1);
+            saveCustomOperationsToStorage();
             updateMultiselectDisplay(index);
             calculateProjection();
         }
@@ -837,20 +1013,38 @@
             return;
         }
 
-        const category = categories.find(c => c.id == categoryId) ||
-            categories.flatMap(c => c.children || []).find(c => c.id == categoryId);
+        let categoryName = 'Sem categoria';
+        let finalDescription = description || 'Sem descrição';
+        let finalAmount = amount;
+
+        // Check if it's a fixed expense
+        if (categoryId.startsWith('fixed_expense_')) {
+            const fixedExpenseId = parseInt(categoryId.replace('fixed_expense_', ''));
+            const fixedExpense = fixedExpenses.find(exp => exp.id === fixedExpenseId);
+            
+            if (fixedExpense) {
+                categoryName = fixedExpense.category_name || 'Gasto Fixo';
+                finalDescription = fixedExpense.name;
+                finalAmount = fixedExpense.amount;
+            }
+        } else {
+            const category = categories.find(c => c.id == categoryId) ||
+                categories.flatMap(c => c.children || []).find(c => c.id == categoryId);
+            categoryName = category ? category.name : 'Sem categoria';
+        }
 
         selectedExpenses.push({
-            category_id: categoryId,
-            category_name: category ? category.name : 'Sem categoria',
-            description: description || 'Sem descrição',
-            amount: amount
+            category_id: categoryId.startsWith('fixed_expense_') ? null : categoryId,
+            category_name: categoryName,
+            description: finalDescription,
+            amount: finalAmount
         });
 
         renderExpenses();
         calculateProjection();
 
         // Clear form
+        document.getElementById('expenseCategory').value = '';
         document.getElementById('expenseDescription').value = '';
         document.getElementById('expenseAmount').value = '';
     }
@@ -1008,7 +1202,24 @@
         `;
 
                 summary.innerHTML = summaryItems;
+                
+                // Save custom results for additional calculations
+                savedCustomResults = {};
+                if (data.custom_results && data.custom_results.length > 0) {
+                    data.custom_results.forEach(result => {
+                        savedCustomResults[result.apply_to] = result.result;
+                    });
+                }
+                
+                // Also save base metrics
+                Object.keys(data).forEach(key => {
+                    if (typeof data[key] === 'number' && !['month', 'options'].includes(key) && !Array.isArray(data[key])) {
+                        savedCustomResults[key] = data[key];
+                    }
+                });
+                
                 renderCustomResults(data.custom_results || []);
+                renderAdditionalCalculations();
             })
             .catch(err => {
                 console.error('Error calculating projection:', err);
@@ -1031,10 +1242,208 @@
 
     document.getElementById('projectionMonth').addEventListener('change', calculateProjection);
 
-    renderCustomOperations();
+    // Auto-fill fields when a fixed expense is selected
+    document.getElementById('expenseCategory').addEventListener('change', function() {
+        const categoryId = this.value;
+        if (categoryId && categoryId.startsWith('fixed_expense_')) {
+            const fixedExpenseId = parseInt(categoryId.replace('fixed_expense_', ''));
+            const fixedExpense = fixedExpenses.find(exp => exp.id === fixedExpenseId);
+            
+            if (fixedExpense) {
+                document.getElementById('expenseDescription').value = fixedExpense.name;
+                document.getElementById('expenseAmount').value = fixedExpense.amount.toFixed(2);
+            }
+        } else {
+            // Clear fields if not a fixed expense
+            if (!document.getElementById('expenseDescription').value) {
+                document.getElementById('expenseDescription').value = '';
+            }
+            if (!document.getElementById('expenseAmount').value) {
+                document.getElementById('expenseAmount').value = '';
+            }
+        }
+    });
+
     renderCustomResults([]);
-    loadCategories();
-    loadAccounts();
-    calculateProjection();
+    
+    // Additional Calculations Functions
+    function addAdditionalCalculation() {
+        additionalCalculations.push({
+            name: '',
+            source_type: 'custom_result', // 'custom_result' or 'custom_value'
+            source_key: '',
+            custom_value: 0,
+            operation: 'add',
+            value: 0,
+            result: 0
+        });
+        saveAdditionalCalculationsToStorage();
+        renderAdditionalCalculations();
+    }
+    
+    function removeAdditionalCalculation(index) {
+        if (confirm('Remover este cálculo adicional?')) {
+            additionalCalculations.splice(index, 1);
+            saveAdditionalCalculationsToStorage();
+            renderAdditionalCalculations();
+        }
+    }
+    
+    function updateAdditionalCalculation(index, field, value) {
+        if (!additionalCalculations[index]) {
+            return;
+        }
+        additionalCalculations[index][field] = value;
+        
+        // If source_type changed, reset source_key or custom_value
+        if (field === 'source_type') {
+            if (value === 'custom_result') {
+                additionalCalculations[index].custom_value = 0;
+            } else {
+                additionalCalculations[index].source_key = '';
+            }
+        }
+        
+        saveAdditionalCalculationsToStorage();
+        calculateAdditionalCalculation(index);
+        renderAdditionalCalculations();
+    }
+    
+    function calculateAdditionalCalculation(index) {
+        const calc = additionalCalculations[index];
+        if (!calc) {
+            return;
+        }
+        
+        let sourceValue = 0;
+        
+        if (calc.source_type === 'custom_result') {
+            sourceValue = savedCustomResults[calc.source_key] || 0;
+        } else {
+            sourceValue = parseFloat(calc.custom_value) || 0;
+        }
+        
+        const value = parseFloat(calc.value) || 0;
+        
+        if (calc.operation === 'add') {
+            calc.result = sourceValue + value;
+        } else {
+            calc.result = sourceValue - value;
+        }
+        
+        saveAdditionalCalculationsToStorage();
+    }
+    
+    function renderAdditionalCalculations() {
+        const container = document.getElementById('additionalCalculationsContainer');
+        if (!container) {
+            return;
+        }
+        
+        if (additionalCalculations.length === 0) {
+            container.innerHTML = '<p class="text-muted mb-0">Nenhum cálculo adicional adicionado. Clique em "Adicionar cálculo" para começar.</p>';
+            return;
+        }
+        
+        // Calculate all results first
+        additionalCalculations.forEach((calc, index) => {
+            calculateAdditionalCalculation(index);
+        });
+        
+        // Get available custom results for select
+        const availableResults = Object.keys(savedCustomResults).map(key => ({
+            value: key,
+            label: metricLabels[key] || key
+        }));
+        
+        container.innerHTML = additionalCalculations.map((calc, index) => `
+            <div class="additional-calculation-row border rounded p-3 mb-3">
+                <div class="row g-3 align-items-end">
+                    <div class="col-md-3 col-12">
+                        <label class="form-label">Nome do Cálculo</label>
+                        <input type="text" class="form-control" value="${calc.name || ''}" 
+                               placeholder="Ex: Saldo Final" 
+                               onchange="updateAdditionalCalculation(${index}, 'name', this.value)">
+                    </div>
+                    <div class="col-md-3 col-12">
+                        <label class="form-label">Fonte</label>
+                        <select class="form-select" onchange="updateAdditionalCalculation(${index}, 'source_type', this.value)">
+                            <option value="custom_result" ${calc.source_type === 'custom_result' ? 'selected' : ''}>Resultado de Combinação</option>
+                            <option value="custom_value" ${calc.source_type === 'custom_value' ? 'selected' : ''}>Valor Personalizado</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3 col-12" id="sourceSelect-${index}">
+                        ${calc.source_type === 'custom_result' 
+                            ? `<label class="form-label">Selecionar Resultado</label>
+                               <select class="form-select" onchange="updateAdditionalCalculation(${index}, 'source_key', this.value)">
+                                   <option value="">Selecione...</option>
+                                   ${availableResults.map(opt => 
+                                       `<option value="${opt.value}" ${calc.source_key === opt.value ? 'selected' : ''}>${opt.label}</option>`
+                                   ).join('')}
+                               </select>`
+                            : `<label class="form-label">Valor Personalizado</label>
+                               <input type="number" class="form-control" step="0.01" value="${calc.custom_value || 0}" 
+                                      onchange="updateAdditionalCalculation(${index}, 'custom_value', parseFloat(this.value))">`
+                        }
+                    </div>
+                    <div class="col-md-2 col-12">
+                        <label class="form-label">Operação</label>
+                        <select class="form-select" onchange="updateAdditionalCalculation(${index}, 'operation', this.value)">
+                            <option value="add" ${calc.operation === 'add' ? 'selected' : ''}>Somar (+)</option>
+                            <option value="subtract" ${calc.operation === 'subtract' ? 'selected' : ''}>Subtrair (-)</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2 col-12">
+                        <label class="form-label">Valor</label>
+                        <input type="number" class="form-control" step="0.01" value="${calc.value || 0}" 
+                               onchange="updateAdditionalCalculation(${index}, 'value', parseFloat(this.value))">
+                    </div>
+                    <div class="col-md-2 col-12">
+                        <label class="form-label">Resultado</label>
+                        <div class="form-control bg-light fw-bold text-center" style="color: ${calc.result >= 0 ? 'var(--success)' : 'var(--danger)'};">
+                            ${formatCurrency(calc.result || 0)}
+                        </div>
+                    </div>
+                    <div class="col-md-1 col-12 text-md-end">
+                        <button class="btn btn-outline-danger w-100" type="button" onclick="removeAdditionalCalculation(${index})">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+        
+        // Update source selects when source_type changes
+        additionalCalculations.forEach((calc, index) => {
+            const sourceSelect = document.getElementById(`sourceSelect-${index}`);
+            if (sourceSelect) {
+                const select = sourceSelect.querySelector('select');
+                const input = sourceSelect.querySelector('input');
+                if (calc.source_type === 'custom_result' && select) {
+                    select.onchange = function() {
+                        updateAdditionalCalculation(index, 'source_key', this.value);
+                    };
+                } else if (calc.source_type === 'custom_value' && input) {
+                    input.onchange = function() {
+                        updateAdditionalCalculation(index, 'custom_value', parseFloat(this.value));
+                    };
+                }
+            }
+        });
+    }
+    
+    // Load data and render custom operations after everything is loaded
+    Promise.all([
+        loadCategories(),
+        loadAccounts()
+    ]).then(() => {
+        // Custom operations will be rendered inside loadFixedExpenses()
+        // which is called by loadCategories()
+        calculateProjection();
+    }).catch(() => {
+        // Fallback: render even if there's an error
+        renderCustomOperations();
+        calculateProjection();
+    });
 </script>
 @endsection

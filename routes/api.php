@@ -48,4 +48,5 @@ Route::prefix('projection')->group(function () {
     Route::post('/calculate', [ProjectionController::class, 'calculate']);
     Route::get('/categories', [ProjectionController::class, 'categories']);
     Route::get('/accounts', [ProjectionController::class, 'accounts']);
+    Route::get('/fixed-expenses', [ProjectionController::class, 'fixedExpenses']);
 });
