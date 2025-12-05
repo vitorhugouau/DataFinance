@@ -9,7 +9,7 @@
     <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#fixedExpenseModal" data-bs-backdrop="false" onclick="openFixedExpenseModal()">
         <i class="bi bi-plus-circle"></i> Novo Gasto Fixo
     </button>
- </div>
+</div>
 
 <div class="row g-4 mb-4">
     <div class="col-md-4">
@@ -57,7 +57,9 @@
                 </tr>
             </thead>
             <tbody id="fixedExpensesTable">
-                <tr><td colspan="8" class="text-center text-muted">Carregando...</td></tr>
+                <tr>
+                    <td colspan="8" class="text-center text-muted">Carregando...</td>
+                </tr>
             </tbody>
         </table>
     </div>
@@ -182,60 +184,66 @@
     }
 </style>
 <script>
-let fixedExpenses = [];
-let accounts = [];
-let categories = [];
+    let fixedExpenses = [];
+    let accounts = [];
+    let categories = [];
 
-function formatCurrency(value) {
-    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value ?? 0);
-}
+    function formatCurrency(value) {
+        return new Intl.NumberFormat('pt-BR', {
+            style: 'currency',
+            currency: 'BRL'
+        }).format(value ?? 0);
+    }
 
-function formatDate(dateString) {
-    return new Date(dateString).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
-}
-
-function loadFixedExpenses() {
-    axios.get('/api/fixed-expenses')
-        .then(r => {
-            fixedExpenses = r.data || [];
-            renderFixedExpenses();
-            updateFixedExpenseCards();
-        })
-        .catch(() => {
-            document.getElementById('fixedExpensesTable').innerHTML = '<tr><td colspan="8" class="text-center text-danger">Erro ao carregar gastos fixos</td></tr>';
+    function formatDate(dateString) {
+        return new Date(dateString).toLocaleDateString('pt-BR', {
+            day: '2-digit',
+            month: 'short'
         });
-}
+    }
 
-function loadAccounts() {
-    axios.get('/api/accounts')
-        .then(r => {
-            accounts = r.data || [];
-            const select = document.getElementById('fixedExpenseAccount');
-            if (!select) return;
-            select.innerHTML = '<option value=\"\">Selecione uma conta...</option>';
-            accounts.forEach(acc => {
-                select.innerHTML += `<option value=\"${acc.id}\">${acc.name}</option>`;
+    function loadFixedExpenses() {
+        axios.get('/api/fixed-expenses')
+            .then(r => {
+                fixedExpenses = r.data || [];
+                renderFixedExpenses();
+                updateFixedExpenseCards();
+            })
+            .catch(() => {
+                document.getElementById('fixedExpensesTable').innerHTML = '<tr><td colspan="8" class="text-center text-danger">Erro ao carregar gastos fixos</td></tr>';
             });
-        });
-}
+    }
 
-function loadCategories() {
-    axios.get('/api/categories')
-        .then(r => {
-            categories = r.data || [];
-            const select = document.getElementById('fixedExpenseCategory');
-            if (!select) return;
-            select.innerHTML = '<option value=\"\">Selecione uma categoria...</option>';
-            categories.forEach(cat => {
-                select.innerHTML += `<option value=\"${cat.id}\">${cat.name}</option>`;
-                (cat.children || []).forEach(sub => {
-                    select.innerHTML += `<option value=\"${sub.id}\">└ ${sub.name}</option>`;
+    function loadAccounts() {
+        axios.get('/api/accounts')
+            .then(r => {
+                accounts = r.data || [];
+                const select = document.getElementById('fixedExpenseAccount');
+                if (!select) return;
+                select.innerHTML = '<option value=\"\">Selecione uma conta...</option>';
+                accounts.forEach(acc => {
+                    select.innerHTML += `<option value=\"${acc.id}\">${acc.name}</option>`;
                 });
             });
-        });
-}
+    }
 
-function renderFixedExpenses() {
+    function loadCategories() {
+        axios.get('/api/categories')
+            .then(r => {
+                categories = r.data || [];
+                const select = document.getElementById('fixedExpenseCategory');
+                if (!select) return;
+                select.innerHTML = '<option value=\"\">Selecione uma categoria...</option>';
+                categories.forEach(cat => {
+                    select.innerHTML += `<option value=\"${cat.id}\">${cat.name}</option>`;
+                    (cat.children || []).forEach(sub => {
+                        select.innerHTML += `<option value=\"${sub.id}\">└ ${sub.name}</option>`;
+                    });
+                });
+            });
+    }
+
+    function renderFixedExpenses() {
     const tbody = document.getElementById('fixedExpensesTable');
     if (fixedExpenses.length === 0) {
         tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted">Nenhum gasto fixo cadastrado</td></tr>';
@@ -243,32 +251,39 @@ function renderFixedExpenses() {
     }
 
     tbody.innerHTML = fixedExpenses.map(exp => {
-        const statusBadge = exp.active
-            ? '<span class="badge bg-success">Ativo</span>'
-            : '<span class="badge bg-secondary">Inativo</span>';
+        const statusBadge = exp.active ?
+            '<span class="badge bg-success">Ativo</span>' :
+            '<span class="badge bg-danger-subtle text-danger">Inativo</span>';
 
         const overdueClass = exp.is_overdue ? 'text-danger' : '';
-        const dueLabel = exp.is_overdue ? 'Atrasado' : exp.days_until_due >= 0 ? `${exp.days_until_due} dias` : '--';
+        const dueLabel = exp.is_overdue ? 'Atrasado' :
+            exp.days_until_due >= 0 ? `${exp.days_until_due} dias` : '--';
 
         const accountName = exp.account?.name ?? '-';
         const categoryName = exp.category?.name ?? '-';
 
+        // 👉 estilo para células de linha inativa
+        const cellStyle = exp.active ? '' : 'style="background-color:#ffe5e5;"';
+
         return `
             <tr>
-                <td data-label="Nome">
+                <td ${cellStyle} data-label="Nome">
                     <strong>${exp.name}</strong><br>
                     <small class="text-muted">${exp.description ?? ''}</small>
                 </td>
-                <td data-label="Valor" class="text-end"><strong>${formatCurrency(exp.amount)}</strong></td>
-                <td data-label="Vencimento" class="${overdueClass}">
+                <td ${cellStyle} data-label="Valor" class="text-end"><strong>${formatCurrency(exp.amount)}</strong></td>
+                <td ${cellStyle} data-label="Vencimento" class="${overdueClass}">
                     ${formatDate(exp.due_date)}<br>
                     <small>${dueLabel}</small>
                 </td>
-                <td data-label="Frequência">${frequencyLabel(exp.frequency)}</td>
-                <td data-label="Conta">${accountName}</td>
-                <td data-label="Categoria">${categoryName}</td>
-                <td data-label="Status">${statusBadge}${exp.auto_debit ? '<span class="badge bg-info ms-1">Auto</span>' : ''}</td>
-                <td data-label="Ações" class="text-center">
+                <td ${cellStyle} data-label="Frequência">${frequencyLabel(exp.frequency)}</td>
+                <td ${cellStyle} data-label="Conta">${accountName}</td>
+                <td ${cellStyle} data-label="Categoria">${categoryName}</td>
+                <td ${cellStyle} data-label="Status">
+                    ${statusBadge}
+                    ${exp.auto_debit ? '<span class="badge bg-info ms-1">Auto</span>' : ''}
+                </td>
+                <td ${cellStyle} data-label="Ações" class="text-center">
                     <div class="btn-group btn-group-sm">
                         <button class="btn btn-outline-success" title="Marcar como pago" onclick="markFixedExpensePaid(${exp.id})">
                             <i class="bi bi-check2-circle"></i>
@@ -286,122 +301,132 @@ function renderFixedExpenses() {
     }).join('');
 }
 
-function frequencyLabel(freq) {
-    return ({
-        weekly: 'Semanal',
-        biweekly: 'Quinzenal',
-        monthly: 'Mensal',
-        quarterly: 'Trimestral',
-        yearly: 'Anual',
-        custom: 'Personalizada'
-    })[freq] ?? 'Mensal';
-}
 
-function updateFixedExpenseCards() {
-    const total = fixedExpenses.reduce((sum, exp) => sum + parseFloat(exp.amount ?? 0), 0);
-    document.getElementById('totalFixedExpenses').innerText = formatCurrency(total);
-
-    const autoDebit = fixedExpenses.filter(exp => exp.auto_debit).length;
-    document.getElementById('autoDebitCount').innerText = `${autoDebit} ${autoDebit === 1 ? 'item' : 'itens'}`;
-
-    const activeExpenses = fixedExpenses.filter(exp => exp.active && exp.due_date).sort((a, b) => new Date(a.due_date) - new Date(b.due_date));
-    if (activeExpenses.length === 0) {
-        document.getElementById('nextDueExpense').innerText = '--';
-        document.getElementById('nextDueDateLabel').innerText = '';
-        return;
+    function frequencyLabel(freq) {
+        return ({
+            weekly: 'Semanal',
+            biweekly: 'Quinzenal',
+            monthly: 'Mensal',
+            quarterly: 'Trimestral',
+            yearly: 'Anual',
+            custom: 'Personalizada'
+        })[freq] ?? 'Mensal';
     }
-    const next = activeExpenses[0];
-    document.getElementById('nextDueExpense').innerText = next.name;
-    document.getElementById('nextDueDateLabel').innerText = `Vence em ${new Date(next.due_date).toLocaleDateString('pt-BR')}`;
-}
 
-function openFixedExpenseModal(id = null) {
-    const modalTitle = document.getElementById('fixedExpenseModalTitle');
-    const form = document.getElementById('fixedExpenseForm');
-    form.reset();
-    document.getElementById('fixedExpenseId').value = id ?? '';
-    document.getElementById('fixedExpenseActive').checked = true;
-    document.getElementById('fixedExpenseAuto').checked = false;
-    setDefaultDueDate();
+    function updateFixedExpenseCards() {
+        const total = fixedExpenses
+            .filter(exp => exp.active)
+            .reduce((sum, exp) => sum + parseFloat(exp.amount ?? 0), 0);
 
-    if (id) {
-        modalTitle.innerText = 'Editar Gasto Fixo';
-        axios.get(`/api/fixed-expenses/${id}`)
-            .then(r => {
-                const exp = r.data;
-                document.getElementById('fixedExpenseName').value = exp.name || '';
-                document.getElementById('fixedExpenseAmount').value = exp.amount || '';
-                document.getElementById('fixedExpenseDueDate').value = exp.due_date || '';
-                document.getElementById('fixedExpenseDescription').value = exp.description || '';
-                document.getElementById('fixedExpenseFrequency').value = exp.frequency || 'monthly';
-                document.getElementById('fixedExpenseCurrency').value = exp.currency || 'BRL';
-                document.getElementById('fixedExpenseAccount').value = exp.account_id || '';
-                document.getElementById('fixedExpenseCategory').value = exp.category_id || '';
-                document.getElementById('fixedExpenseAuto').checked = !!exp.auto_debit;
-                document.getElementById('fixedExpenseActive').checked = exp.active ?? true;
+        document.getElementById('totalFixedExpenses').innerText = formatCurrency(total);
 
-                const modal = new bootstrap.Modal(document.getElementById('fixedExpenseModal'), { backdrop: false });
-                modal.show();
+        const autoDebit = fixedExpenses.filter(exp => exp.auto_debit).length;
+        document.getElementById('autoDebitCount').innerText = `${autoDebit} ${autoDebit === 1 ? 'item' : 'itens'}`;
+
+        const activeExpenses = fixedExpenses
+            .filter(exp => exp.active && exp.due_date)
+            .sort((a, b) => new Date(a.due_date) - new Date(b.due_date));
+
+        if (activeExpenses.length === 0) {
+            document.getElementById('nextDueExpense').innerText = '--';
+            document.getElementById('nextDueDateLabel').innerText = '';
+            return;
+        }
+
+        const next = activeExpenses[0];
+        document.getElementById('nextDueExpense').innerText = next.name;
+        document.getElementById('nextDueDateLabel').innerText =
+            `Vence em ${new Date(next.due_date).toLocaleDateString('pt-BR')}`;
+    }
+
+
+    function openFixedExpenseModal(id = null) {
+        const modalTitle = document.getElementById('fixedExpenseModalTitle');
+        const form = document.getElementById('fixedExpenseForm');
+        form.reset();
+        document.getElementById('fixedExpenseId').value = id ?? '';
+        document.getElementById('fixedExpenseActive').checked = true;
+        document.getElementById('fixedExpenseAuto').checked = false;
+        setDefaultDueDate();
+
+        if (id) {
+            modalTitle.innerText = 'Editar Gasto Fixo';
+            axios.get(`/api/fixed-expenses/${id}`)
+                .then(r => {
+                    const exp = r.data;
+                    document.getElementById('fixedExpenseName').value = exp.name || '';
+                    document.getElementById('fixedExpenseAmount').value = exp.amount || '';
+                    document.getElementById('fixedExpenseDueDate').value = exp.due_date || '';
+                    document.getElementById('fixedExpenseDescription').value = exp.description || '';
+                    document.getElementById('fixedExpenseFrequency').value = exp.frequency || 'monthly';
+                    document.getElementById('fixedExpenseCurrency').value = exp.currency || 'BRL';
+                    document.getElementById('fixedExpenseAccount').value = exp.account_id || '';
+                    document.getElementById('fixedExpenseCategory').value = exp.category_id || '';
+                    document.getElementById('fixedExpenseAuto').checked = !!exp.auto_debit;
+                    document.getElementById('fixedExpenseActive').checked = exp.active ?? true;
+
+                    const modal = new bootstrap.Modal(document.getElementById('fixedExpenseModal'), {
+                        backdrop: false
+                    });
+                    modal.show();
+                });
+        } else {
+            modalTitle.innerText = 'Novo Gasto Fixo';
+        }
+    }
+
+    function setDefaultDueDate() {
+        const dueDateInput = document.getElementById('fixedExpenseDueDate');
+        if (!dueDateInput.value) {
+            const nextMonth = new Date();
+            dueDateInput.value = nextMonth.toISOString().substring(0, 10);
+        }
+    }
+
+    document.getElementById('fixedExpenseForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const id = document.getElementById('fixedExpenseId').value;
+        const data = {
+            name: document.getElementById('fixedExpenseName').value,
+            amount: document.getElementById('fixedExpenseAmount').value,
+            due_date: document.getElementById('fixedExpenseDueDate').value,
+            account_id: document.getElementById('fixedExpenseAccount').value || null,
+            category_id: document.getElementById('fixedExpenseCategory').value || null,
+            description: document.getElementById('fixedExpenseDescription').value || null,
+            frequency: document.getElementById('fixedExpenseFrequency').value,
+            currency: document.getElementById('fixedExpenseCurrency').value,
+            auto_debit: document.getElementById('fixedExpenseAuto').checked,
+            active: document.getElementById('fixedExpenseActive').checked,
+        };
+
+        const method = id ? 'put' : 'post';
+        const url = id ? `/api/fixed-expenses/${id}` : '/api/fixed-expenses';
+
+        axios[method](url, data)
+            .then(() => {
+                loadFixedExpenses();
+                bootstrap.Modal.getInstance(document.getElementById('fixedExpenseModal'))?.hide();
+            })
+            .catch(err => {
+                alert('Erro ao salvar gasto: ' + (err.response?.data?.message || err.message));
             });
-    } else {
-        modalTitle.innerText = 'Novo Gasto Fixo';
+    });
+
+    function deleteFixedExpense(id) {
+        if (!confirm('Deseja realmente excluir este gasto fixo?')) return;
+        axios.delete(`/api/fixed-expenses/${id}`)
+            .then(loadFixedExpenses)
+            .catch(err => alert('Erro ao excluir: ' + (err.response?.data?.message || err.message)));
     }
-}
 
-function setDefaultDueDate() {
-    const dueDateInput = document.getElementById('fixedExpenseDueDate');
-    if (!dueDateInput.value) {
-        const nextMonth = new Date();
-        dueDateInput.value = nextMonth.toISOString().substring(0, 10);
+    function markFixedExpensePaid(id) {
+        axios.post(`/api/fixed-expenses/${id}/mark-paid`)
+            .then(loadFixedExpenses)
+            .catch(err => alert('Erro ao marcar pagamento: ' + (err.response?.data?.message || err.message)));
     }
-}
 
-document.getElementById('fixedExpenseForm').addEventListener('submit', function (e) {
-    e.preventDefault();
-    const id = document.getElementById('fixedExpenseId').value;
-    const data = {
-        name: document.getElementById('fixedExpenseName').value,
-        amount: document.getElementById('fixedExpenseAmount').value,
-        due_date: document.getElementById('fixedExpenseDueDate').value,
-        account_id: document.getElementById('fixedExpenseAccount').value || null,
-        category_id: document.getElementById('fixedExpenseCategory').value || null,
-        description: document.getElementById('fixedExpenseDescription').value || null,
-        frequency: document.getElementById('fixedExpenseFrequency').value,
-        currency: document.getElementById('fixedExpenseCurrency').value,
-        auto_debit: document.getElementById('fixedExpenseAuto').checked,
-        active: document.getElementById('fixedExpenseActive').checked,
-    };
-
-    const method = id ? 'put' : 'post';
-    const url = id ? `/api/fixed-expenses/${id}` : '/api/fixed-expenses';
-
-    axios[method](url, data)
-        .then(() => {
-            loadFixedExpenses();
-            bootstrap.Modal.getInstance(document.getElementById('fixedExpenseModal'))?.hide();
-        })
-        .catch(err => {
-            alert('Erro ao salvar gasto: ' + (err.response?.data?.message || err.message));
-        });
-});
-
-function deleteFixedExpense(id) {
-    if (!confirm('Deseja realmente excluir este gasto fixo?')) return;
-    axios.delete(`/api/fixed-expenses/${id}`)
-        .then(loadFixedExpenses)
-        .catch(err => alert('Erro ao excluir: ' + (err.response?.data?.message || err.message)));
-}
-
-function markFixedExpensePaid(id) {
-    axios.post(`/api/fixed-expenses/${id}/mark-paid`)
-        .then(loadFixedExpenses)
-        .catch(err => alert('Erro ao marcar pagamento: ' + (err.response?.data?.message || err.message)));
-}
-
-loadAccounts();
-loadCategories();
-loadFixedExpenses();
+    loadAccounts();
+    loadCategories();
+    loadFixedExpenses();
 </script>
 @endsection
-
-

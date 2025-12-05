@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
     <meta charset="utf-8">
     <title>Painel Financeiro</title>
@@ -44,7 +45,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: 
+            background:
                 radial-gradient(circle at 20% 50%, rgba(124, 58, 237, 0.1) 0%, transparent 50%),
                 radial-gradient(circle at 80% 80%, rgba(0, 212, 255, 0.1) 0%, transparent 50%);
             pointer-events: none;
@@ -194,7 +195,10 @@
             opacity: 1;
         }
 
-        .card h2, .card h3, .card h4, .card h5 {
+        .card h2,
+        .card h3,
+        .card h4,
+        .card h5 {
             color: var(--text-primary);
             margin-bottom: 1rem;
         }
@@ -237,7 +241,8 @@
             color: var(--accent-primary);
         }
 
-        .form-control, .form-select {
+        .form-control,
+        .form-select {
             background: var(--bg-secondary);
             border: 1px solid var(--border-color);
             color: var(--text-primary);
@@ -245,7 +250,8 @@
             padding: 0.75rem 1rem;
         }
 
-        .form-control:focus, .form-select:focus {
+        .form-control:focus,
+        .form-select:focus {
             background: var(--bg-secondary);
             border-color: var(--accent-primary);
             color: var(--text-primary);
@@ -333,6 +339,12 @@
             display: none !important;
         }
 
+        .inactive-row {
+            background-color: #ffe5e5 !important;
+            /* vermelho bem suave */
+        }
+
+
         /* Mobile Responsive */
         @media (max-width: 768px) {
             .navbar {
@@ -343,34 +355,34 @@
                 font-size: 1.2rem;
             }
 
-        .sidebar {
-            width: 280px;
-            max-width: 80%;
-            transform: translateX(-100%);
-            transition: transform 0.3s ease;
-            z-index: 1050;
-            box-shadow: 2px 0 10px rgba(0, 0, 0, 0.5);
-        }
+            .sidebar {
+                width: 280px;
+                max-width: 80%;
+                transform: translateX(-100%);
+                transition: transform 0.3s ease;
+                z-index: 1050;
+                box-shadow: 2px 0 10px rgba(0, 0, 0, 0.5);
+            }
 
-        .sidebar.show {
-            transform: translateX(0);
-        }
-        
-        .sidebar-overlay {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.5);
-            z-index: 1049;
-        }
-        
-        .sidebar.show ~ .sidebar-overlay,
-        .sidebar-overlay.show {
-            display: block;
-        }
+            .sidebar.show {
+                transform: translateX(0);
+            }
+
+            .sidebar-overlay {
+                display: none;
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.5);
+                z-index: 1049;
+            }
+
+            .sidebar.show~.sidebar-overlay,
+            .sidebar-overlay.show {
+                display: block;
+            }
 
             .content {
                 margin-left: 0;
@@ -463,174 +475,176 @@
         }
     </style>
 </head>
+
 <body>
-<nav class="navbar navbar-expand-lg navbar-dark">
-    <div class="container-fluid">
-        <a class="navbar-brand" href="/dashboard">
-            <i class="bi bi-graph-up-arrow"></i> Finanças Pro
-        </a>
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#nav" aria-controls="nav" aria-expanded="false" aria-label="Toggle navigation">
-            <span class="navbar-toggler-icon"></span>
-        </button>
-        <button class="btn btn-link d-md-none ms-2" type="button" id="sidebarToggle" style="color: var(--accent-primary);">
-            <i class="bi bi-list"></i>
-        </button>
-        <div class="collapse navbar-collapse" id="nav">
-            <ul class="navbar-nav ms-auto">
-                <li class="nav-item"><a class="nav-link" href="/dashboard"><i class="bi bi-speedometer2"></i> Dashboard</a></li>
-                <li class="nav-item"><a class="nav-link" href="/accounts"><i class="bi bi-wallet2"></i> Contas</a></li>
-                <li class="nav-item"><a class="nav-link" href="/categories"><i class="bi bi-tags"></i> Categorias</a></li>
-                <li class="nav-item"><a class="nav-link" href="/transactions"><i class="bi bi-arrow-left-right"></i> Transações</a></li>
-                <li class="nav-item"><a class="nav-link" href="/investments"><i class="bi bi-graph-up-arrow"></i> Investimentos</a></li>
-                <li class="nav-item"><a class="nav-link" href="/quotes"><i class="bi bi-currency-exchange"></i> Cotações</a></li>
-                <li class="nav-item"><a class="nav-link" href="/projection"><i class="bi bi-calculator"></i> Projeção</a></li>
-                <li class="nav-item"><a class="nav-link" href="/credit-cards"><i class="bi bi-credit-card"></i> Cartões</a></li>
-                <li class="nav-item"><a class="nav-link" href="/fixed-expenses"><i class="bi bi-receipt-cutoff"></i> Gastos Fixos</a></li>
-                <li class="nav-item"><a class="nav-link" href="/goals"><i class="bi bi-bullseye"></i> Metas</a></li>
-                <li class="nav-item"><a class="nav-link" href="/receivables"><i class="bi bi-cash-coin"></i> A Receber</a></li>
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="/dashboard">
+                <i class="bi bi-graph-up-arrow"></i> Finanças Pro
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#nav" aria-controls="nav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <button class="btn btn-link d-md-none ms-2" type="button" id="sidebarToggle" style="color: var(--accent-primary);">
+                <i class="bi bi-list"></i>
+            </button>
+            <div class="collapse navbar-collapse" id="nav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item"><a class="nav-link" href="/dashboard"><i class="bi bi-speedometer2"></i> Dashboard</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/accounts"><i class="bi bi-wallet2"></i> Contas</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/categories"><i class="bi bi-tags"></i> Categorias</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/transactions"><i class="bi bi-arrow-left-right"></i> Transações</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/investments"><i class="bi bi-graph-up-arrow"></i> Investimentos</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/quotes"><i class="bi bi-currency-exchange"></i> Cotações</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/projection"><i class="bi bi-calculator"></i> Projeção</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/credit-cards"><i class="bi bi-credit-card"></i> Cartões</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/fixed-expenses"><i class="bi bi-receipt-cutoff"></i> Gastos Fixos</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/goals"><i class="bi bi-bullseye"></i> Metas</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/receivables"><i class="bi bi-cash-coin"></i> A Receber</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="d-flex">
+        <div class="sidebar-overlay" id="sidebarOverlay"></div>
+        <div class="sidebar">
+            <h5><i class="bi bi-menu-button-wide"></i> Menu</h5>
+            <ul class="nav nav-pills flex-column">
+                <li class="nav-item">
+                    <a href="/dashboard" class="nav-link">
+                        <i class="bi bi-speedometer2"></i>
+                        <span>Dashboard</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="/accounts" class="nav-link">
+                        <i class="bi bi-wallet2"></i>
+                        <span>Contas</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="/categories" class="nav-link">
+                        <i class="bi bi-tags"></i>
+                        <span>Categorias</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="/transactions" class="nav-link">
+                        <i class="bi bi-arrow-left-right"></i>
+                        <span>Transações</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="/investments" class="nav-link">
+                        <i class="bi bi-graph-up-arrow"></i>
+                        <span>Investimentos</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="/quotes" class="nav-link">
+                        <i class="bi bi-currency-exchange"></i>
+                        <span>Cotações</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="/projection" class="nav-link">
+                        <i class="bi bi-calculator"></i>
+                        <span>Projeção</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="/credit-cards" class="nav-link">
+                        <i class="bi bi-credit-card"></i>
+                        <span>Cartões</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="/fixed-expenses" class="nav-link">
+                        <i class="bi bi-receipt-cutoff"></i>
+                        <span>Gastos Fixos</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="/goals" class="nav-link">
+                        <i class="bi bi-bullseye"></i>
+                        <span>Metas</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="/receivables" class="nav-link">
+                        <i class="bi bi-cash-coin"></i>
+                        <span>A Receber</span>
+                    </a>
+                </li>
             </ul>
         </div>
-    </div>
-</nav>
 
-<div class="d-flex">
-    <div class="sidebar-overlay" id="sidebarOverlay"></div>
-    <div class="sidebar">
-        <h5><i class="bi bi-menu-button-wide"></i> Menu</h5>
-        <ul class="nav nav-pills flex-column">
-            <li class="nav-item">
-                <a href="/dashboard" class="nav-link">
-                    <i class="bi bi-speedometer2"></i>
-                    <span>Dashboard</span>
-                </a>
-            </li>
-            <li class="nav-item">
-                <a href="/accounts" class="nav-link">
-                    <i class="bi bi-wallet2"></i>
-                    <span>Contas</span>
-                </a>
-            </li>
-            <li class="nav-item">
-                <a href="/categories" class="nav-link">
-                    <i class="bi bi-tags"></i>
-                    <span>Categorias</span>
-                </a>
-            </li>
-            <li class="nav-item">
-                <a href="/transactions" class="nav-link">
-                    <i class="bi bi-arrow-left-right"></i>
-                    <span>Transações</span>
-                </a>
-            </li>
-            <li class="nav-item">
-                <a href="/investments" class="nav-link">
-                    <i class="bi bi-graph-up-arrow"></i>
-                    <span>Investimentos</span>
-                </a>
-            </li>
-            <li class="nav-item">
-                <a href="/quotes" class="nav-link">
-                    <i class="bi bi-currency-exchange"></i>
-                    <span>Cotações</span>
-                </a>
-            </li>
-            <li class="nav-item">
-                <a href="/projection" class="nav-link">
-                    <i class="bi bi-calculator"></i>
-                    <span>Projeção</span>
-                </a>
-            </li>
-            <li class="nav-item">
-                <a href="/credit-cards" class="nav-link">
-                    <i class="bi bi-credit-card"></i>
-                    <span>Cartões</span>
-                </a>
-            </li>
-            <li class="nav-item">
-                <a href="/fixed-expenses" class="nav-link">
-                    <i class="bi bi-receipt-cutoff"></i>
-                    <span>Gastos Fixos</span>
-                </a>
-            </li>
-            <li class="nav-item">
-                <a href="/goals" class="nav-link">
-                    <i class="bi bi-bullseye"></i>
-                    <span>Metas</span>
-                </a>
-            </li>
-            <li class="nav-item">
-                <a href="/receivables" class="nav-link">
-                    <i class="bi bi-cash-coin"></i>
-                    <span>A Receber</span>
-                </a>
-            </li>
-        </ul>
+        <main class="content w-100">
+            <div class="container-fluid">
+                @yield('content')
+            </div>
+        </main>
     </div>
 
-    <main class="content w-100">
-        <div class="container-fluid">
-            @yield('content')
-        </div>
-    </main>
-</div>
-
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-<script>
-    // Highlight active menu item
-    document.querySelectorAll('.sidebar .nav-link, .navbar-nav .nav-link').forEach(link => {
-        if (link.getAttribute('href') === window.location.pathname) {
-            link.classList.add('active');
-        }
-    });
-
-    // Mobile sidebar toggle
-    const sidebarToggle = document.getElementById('sidebarToggle');
-    const sidebar = document.querySelector('.sidebar');
-    const sidebarOverlay = document.getElementById('sidebarOverlay');
-    
-    function toggleSidebar() {
-        if (window.innerWidth <= 768) {
-            sidebar.classList.toggle('show');
-            if (sidebarOverlay) {
-                sidebarOverlay.classList.toggle('show');
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Highlight active menu item
+        document.querySelectorAll('.sidebar .nav-link, .navbar-nav .nav-link').forEach(link => {
+            if (link.getAttribute('href') === window.location.pathname) {
+                link.classList.add('active');
             }
-        }
-    }
-    
-    function closeSidebar() {
-        if (window.innerWidth <= 768) {
-            sidebar.classList.remove('show');
-            if (sidebarOverlay) {
-                sidebarOverlay.classList.remove('show');
-            }
-        }
-    }
-    
-    if (sidebarToggle && sidebar) {
-        sidebarToggle.addEventListener('click', function(e) {
-            e.stopPropagation();
-            toggleSidebar();
         });
 
-        // Close sidebar when clicking on overlay
-        if (sidebarOverlay) {
-            sidebarOverlay.addEventListener('click', closeSidebar);
+        // Mobile sidebar toggle
+        const sidebarToggle = document.getElementById('sidebarToggle');
+        const sidebar = document.querySelector('.sidebar');
+        const sidebarOverlay = document.getElementById('sidebarOverlay');
+
+        function toggleSidebar() {
+            if (window.innerWidth <= 768) {
+                sidebar.classList.toggle('show');
+                if (sidebarOverlay) {
+                    sidebarOverlay.classList.toggle('show');
+                }
+            }
         }
 
-        // Close sidebar when clicking on a link
-        const sidebarLinks = sidebar.querySelectorAll('.nav-link');
-        sidebarLinks.forEach(link => {
-            link.addEventListener('click', closeSidebar);
-        });
-    }
+        function closeSidebar() {
+            if (window.innerWidth <= 768) {
+                sidebar.classList.remove('show');
+                if (sidebarOverlay) {
+                    sidebarOverlay.classList.remove('show');
+                }
+            }
+        }
 
-    // Remove modal-open class when modals are hidden
-    document.addEventListener('hidden.bs.modal', function(e) {
-        document.body.classList.remove('modal-open');
-        document.body.style.overflow = '';
-        document.body.style.paddingRight = '';
-    });
-</script>
-@yield('scripts')
+        if (sidebarToggle && sidebar) {
+            sidebarToggle.addEventListener('click', function(e) {
+                e.stopPropagation();
+                toggleSidebar();
+            });
+
+            // Close sidebar when clicking on overlay
+            if (sidebarOverlay) {
+                sidebarOverlay.addEventListener('click', closeSidebar);
+            }
+
+            // Close sidebar when clicking on a link
+            const sidebarLinks = sidebar.querySelectorAll('.nav-link');
+            sidebarLinks.forEach(link => {
+                link.addEventListener('click', closeSidebar);
+            });
+        }
+
+        // Remove modal-open class when modals are hidden
+        document.addEventListener('hidden.bs.modal', function(e) {
+            document.body.classList.remove('modal-open');
+            document.body.style.overflow = '';
+            document.body.style.paddingRight = '';
+        });
+    </script>
+    @yield('scripts')
 </body>
+
 </html>
